@@ -1,0 +1,105 @@
+{
+  "id": "rec_paid_media_2026_07_01",
+  "organization_id": "org_acme_123",
+  "status": "proposed",
+  "created_at": "2026-07-22T18:00:00Z",
+  "objective": "Eliminate paid search spend waste on non-converting broad-match search terms",
+  "baseline": {
+    "metric": "google_ads_cpa_crm_reconciled",
+    "current_value": 480.0,
+    "unit": "USD",
+    "timeframe": "last_30_days",
+    "source": "Google Ads + HubSpot CRM Reconciliation"
+  },
+  "evidence": [
+    {
+      "source": "Google Ads Search Terms Export",
+      "metric": "platform_reported_roas",
+      "value": 4.2,
+      "context": "Platform shows 4.2x ROAS based on form-fills",
+      "timestamp": "2026-07-22T10:00:00Z"
+    },
+    {
+      "source": "HubSpot CRM Deal Sync",
+      "metric": "lead_to_opportunity_rate",
+      "value": 0.04,
+      "context": "Form-fills from broad match keywords fail sales qualification (only 4% accepted vs 22% benchmark)",
+      "timestamp": "2026-07-22T10:00:00Z"
+    }
+  ],
+  "data_quality": "high",
+  "assumptions": [
+    "CRM deal attribution window is set to 30 days",
+    "Sales qualification criteria remained consistent over the last 60 days"
+  ],
+  "unresolved_questions": [
+    "Are non-converting broad match terms contributing to top-of-funnel retargeting audiences?"
+  ],
+  "diagnosis": "Google Ads platform reports artificial 4.2x ROAS due to counting unverified e-book downloads as conversions. Downstream CRM reconciliation reveals broad match campaign 'US_Search_Generic' incurs $480 CPA (target: $250).",
+  "alternatives_considered": [
+    {
+      "alternative": "Increase overall campaign budget to scale conversions",
+      "reason_rejected": "Scales low-quality lead volume without improving CAC or sales pipeline acceptance"
+    }
+  ],
+  "proposed_action": "Pause the 5 lowest-performing broad-match ad groups in campaign 'US_Search_Generic' and reallocate $2,500 monthly budget to exact match branded and high-intent term campaigns.",
+  "expected_mechanism": "Stopping spend on non-converting queries directly reduces wasted ad spend, driving blended CRM CPA down toward target.",
+  "expected_outcome_range": {
+    "min": 240.0,
+    "max": 280.0,
+    "unit": "USD_CPA",
+    "timeframe": "next_30_days"
+  },
+  "confidence": "high",
+  "cost": {
+    "direct_spend": 0.0,
+    "tool_cost": 0.0,
+    "team_hours": 1.5,
+    "opportunity_cost": "Potential slight drop in raw top-of-funnel lead count"
+  },
+  "dependencies": ["Access permissions for Google Ads API / Campaign Manager"],
+  "risks": [
+    "Temporary reduction in total raw lead volume"
+  ],
+  "guardrails": [
+    "Sales accepted pipeline volume must not drop below 15 opportunities/week"
+  ],
+  "measurement_plan": {
+    "primary_metric": "hubspot_cpa_qualified_leads",
+    "guardrail_metrics": ["weekly_sales_accepted_opportunities"],
+    "observation_window_days": 14
+  },
+  "approval_requirement": {
+    "risk_class": "medium",
+    "approver_role": "performance_media_buyer",
+    "expiry": "2026-07-29T23:59:59Z"
+  },
+  "rollback_guidance": "Unpause paused ad groups via action capability contract rollback script if qualified lead volume drops > 20%.",
+  "short_sequence": [
+    {
+      "task_id": "task_001",
+      "task": "Pause 5 underperforming broad-match ad groups in campaign US_Search_Generic",
+      "owner_role": "performance_media_buyer",
+      "priority": "high",
+      "expected_impact": "Saves $2,500/month in wasted spend",
+      "confidence": "high",
+      "action_capability_id": "action_pause_ad_groups",
+      "completion_evidence": "Google Ads Change History log entry",
+      "success_metric": "ad_groups_status_paused"
+    }
+  ],
+  "long_sequence": [
+    {
+      "task_id": "task_002",
+      "task": "Implement Google Ads Offline Conversion Tracking (OCT) with HubSpot deal stages",
+      "owner_role": "marketing_ops",
+      "priority": "critical",
+      "expected_impact": "Passes real revenue signals back to Google Smart Bidding",
+      "confidence": "high",
+      "action_capability_id": "action_setup_oct_sync",
+      "completion_evidence": "HubSpot-Google Ads conversion action status active",
+      "success_metric": "oct_sync_active"
+    }
+  ],
+  "next_review_at": "2026-07-29T10:00:00Z"
+}

@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "definitions.schema.json",
+  "title": "Shared Definitions Schema",
+  "$defs": {
+    "risk_class": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "prohibited"]
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["critical", "high", "medium", "low"]
+    },
+    "confidence_level": {
+      "type": "string",
+      "enum": ["high", "medium", "low"]
+    },
+    "data_quality_level": {
+      "type": "string",
+      "enum": ["high", "medium", "low", "insufficient"]
+    },
+    "iso_timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "actor": {
+      "type": "object",
+      "required": ["type", "id"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["system", "human", "agent"]
+        },
+        "id": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        }
+      }
+    },
+    "evidence_item": {
+      "type": "object",
+      "required": ["source", "metric", "value"],
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "metric": {
+          "type": "string"
+        },
+        "value": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "number" },
+            { "type": "boolean" }
+          ]
+        },
+        "context": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "metric_reference": {
+      "type": "object",
+      "required": ["metric_id", "current_value"],
+      "properties": {
+        "metric_id": {
+          "type": "string"
+        },
+        "current_value": {
+          "type": "number"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "timeframe": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

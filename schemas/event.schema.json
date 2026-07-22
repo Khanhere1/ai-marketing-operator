@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "event.schema.json",
+  "title": "Audit Event Schema",
+  "type": "object",
+  "required": [
+    "event_id",
+    "event_type",
+    "occurred_at",
+    "organization_id",
+    "actor",
+    "correlation_id",
+    "payload_hash"
+  ],
+  "properties": {
+    "event_id": { "type": "string" },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "recommendation_created",
+        "recommendation_accepted",
+        "recommendation_rejected",
+        "action_proposed",
+        "action_approved",
+        "action_executed",
+        "action_verified",
+        "action_rolled_back",
+        "policy_violation",
+        "data_quality_issue",
+        "data_ingestion",
+        "analysis_complete",
+        "learning_captured",
+        "governance_review",
+        "workflow_started",
+        "workflow_completed",
+        "workflow_failed"
+      ]
+    },
+    "occurred_at": { "type": "string", "format": "date-time" },
+    "organization_id": { "type": "string" },
+    "actor": { "$ref": "definitions.schema.json#/$defs/actor" },
+    "workflow_id": { "type": "string" },
+    "workflow_version": { "type": "string" },
+    "correlation_id": { "type": "string" },
+    "causation_id": { "type": "string" },
+    "idempotency_key": { "type": "string" },
+    "payload_hash": { "type": "string" },
+    "policy_versions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "result": {
+      "type": "string",
+      "enum": ["success", "failure", "partial", "blocked", "pending"]
+    }
+  }
+}

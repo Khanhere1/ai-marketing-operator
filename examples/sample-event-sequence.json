@@ -1,0 +1,40 @@
+[
+  {
+    "event_id": "evt_101",
+    "event_type": "recommendation_created",
+    "occurred_at": "2026-07-22T18:00:00Z",
+    "organization_id": "org_acme_123",
+    "actor": {
+      "type": "agent",
+      "id": "agent_paid_media_analyst",
+      "role": "performance_analyst"
+    },
+    "workflow_id": "paid-media-review",
+    "workflow_version": "0.1.0",
+    "correlation_id": "corr_run_88921",
+    "causation_id": "trigger_sched_001",
+    "idempotency_key": "idemp_rec_paid_media_2026_07_01",
+    "payload_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "policy_versions": ["global-prohibitions@0.1.0"],
+    "result": "success"
+  },
+  {
+    "event_id": "evt_102",
+    "event_type": "action_approved",
+    "occurred_at": "2026-07-22T18:05:00Z",
+    "organization_id": "org_acme_123",
+    "actor": {
+      "type": "human",
+      "id": "user_sarah_media_buyer",
+      "role": "performance_media_buyer"
+    },
+    "workflow_id": "paid-media-review",
+    "workflow_version": "0.1.0",
+    "correlation_id": "corr_run_88921",
+    "causation_id": "evt_101",
+    "idempotency_key": "idemp_appr_action_001",
+    "payload_hash": "f4c0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b999",
+    "policy_versions": ["global-prohibitions@0.1.0"],
+    "result": "success"
+  }
+]

@@ -1,0 +1,71 @@
+id: paid-media-review
+version: 0.1.0
+status: draft
+mode: advisory
+risk_class: medium
+owner_role: performance_media_buyer
+trigger:
+  type: command_schedule_or_anomaly
+  schedule: "0 10 * * 2"
+business_objective: "Optimize paid media efficiency, detect waste, and align with downstream CRM outcomes"
+primary_metric: "roas_crm_reconciled"
+guardrail_metrics:
+  - cpa
+  - lead_acceptance_rate
+  - ad_spend_limit
+preconditions:
+  - business_objective_defined
+  - ad_data_read_access
+  - conversion_definitions_available
+  - privacy_and_policy_context_available
+states:
+  - intake
+  - measurement_audit
+  - parallel_analysis
+  - diagnosis
+  - alternative_generation
+  - assurance_review
+  - task_planning
+  - human_buyer_handoff
+  - outcome_learning
+agents_and_tools:
+  - role: paid_media_analyst
+    responsibility: "Audit Google Ads, Meta Ads, and LinkedIn Campaign performance"
+  - role: crm_reconciliation_specialist
+    responsibility: "Cross-check platform-attributed conversions against CRM opportunities"
+  - role: creative_reviewer
+    responsibility: "Identify creative fatigue, copy mismatches, and landing page misalignment"
+sequence:
+  parallel_steps:
+    - measurement_quality_review
+    - platform_performance_review
+    - creative_review
+    - landing_page_alignment
+    - crm_or_order_reconciliation
+  sequential_steps:
+    - constraint_diagnosis
+    - alternative_generation
+    - assurance_review
+    - immediate_operator_tasks
+    - long_term_capability_tasks
+    - human_media_buyer_handoff
+    - outcome_review_and_learning
+outputs:
+  - paid_media_diagnostic
+  - evidence_bundle
+  - prioritized_change_proposals
+  - experiment_backlog
+  - short_sequence
+  - long_sequence
+  - executive_summary
+  - decision_record
+  - learning_proposal
+external_writes: false
+error_handling:
+  on_data_quality_failure: "degrade_with_explicit_missing_data_warnings"
+  on_unauthorized_permission: "block_and_log_audit_event"
+  on_policy_conflict: "escalate_to_human_reviewer"
+governance:
+  approval_required: true
+  audit_level: detailed
+  risk_classification: medium

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: GitHub Discussions
+    url: https://github.com/ai-marketing-operator/discussions
+    about: Ask questions, propose ideas, or discuss implementation architecture.
+  - name: Security Vulnerability Reporting
+    url: https://github.com/ai-marketing-operator/security/advisories/new
+    about: Please report security vulnerabilities privately.

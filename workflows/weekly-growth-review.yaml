@@ -1,0 +1,63 @@
+id: weekly-growth-review
+version: 0.1.0
+status: draft
+mode: advisory
+risk_class: low
+owner_role: marketing_ops
+trigger:
+  type: schedule_or_command
+  schedule: "0 9 * * 1"
+business_objective: "Weekly growth review and bottleneck diagnosis"
+primary_metric: "incremental_revenue"
+guardrail_metrics:
+  - blended_cac
+  - lead_quality_rate
+preconditions:
+  - organization_context_available
+  - metric_registry_available
+  - data_freshness_checked
+states:
+  - intake
+  - data_validation
+  - parallel_analysis
+  - diagnosis
+  - assurance_review
+  - task_planning
+  - human_review
+  - completed
+agents_and_tools:
+  - role: data_quality_analyst
+    responsibility: "Validate data freshness, schema compliance, and completeness score"
+  - role: performance_marketer
+    responsibility: "Diagnose campaign bottlenecks, ROAS vs CRM performance"
+  - role: assurance_critic
+    responsibility: "Review brand claims, policy compliance, and evidence validity"
+sequence:
+  parallel_steps:
+    - analytics_review
+    - advertising_review
+    - crm_reconciliation
+  sequential_steps:
+    - constraint_diagnosis
+    - recommendation_assembly
+    - assurance_review
+    - operator_task_sequencing
+    - executive_summary_generation
+outputs:
+  - data_quality_report
+  - performance_summary
+  - constraint_diagnosis
+  - recommendation_pack
+  - short_task_sequence
+  - long_task_sequence
+  - executive_summary
+  - memory_proposal
+external_writes: false
+error_handling:
+  on_data_quality_failure: "degrade_with_explicit_missing_data_warnings"
+  on_policy_conflict: "escalate_to_human_reviewer"
+  on_timeout: "save_checkpoint_and_retry"
+governance:
+  approval_required: false
+  audit_level: detailed
+  risk_classification: low

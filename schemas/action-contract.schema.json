@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "action-contract.schema.json",
+  "title": "Action Capability Contract",
+  "type": "object",
+  "required": [
+    "capability_id",
+    "version",
+    "risk_class",
+    "reversible",
+    "idempotency_key_required",
+    "required_permissions",
+    "required_inputs",
+    "preconditions",
+    "verification",
+    "rollback",
+    "audit_events"
+  ],
+  "properties": {
+    "capability_id": { "type": "string" },
+    "version": { "type": "string" },
+    "purpose": { "type": "string" },
+    "risk_class": { "$ref": "definitions.schema.json#/$defs/risk_class" },
+    "reversible": { "type": "boolean" },
+    "idempotency_key_required": { "type": "boolean", "default": true },
+    "timeout_seconds": { "type": "integer", "default": 30 },
+    "max_retries": { "type": "integer", "default": 3 },
+    "partial_failure_handling": {
+      "type": "string",
+      "enum": ["abort", "continue", "compensate"],
+      "default": "abort"
+    },
+    "default_mode": {
+      "type": "string",
+      "enum": [
+        "observe",
+        "advise",
+        "prepare",
+        "transaction_approval",
+        "standing_approval"
+      ]
+    },
+    "required_permissions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "required_inputs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "preconditions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "prohibited_conditions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "verification": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "rollback": {
+      "type": "object",
+      "required": ["steps"],
+      "properties": {
+        "steps": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "verification": { "type": "string" },
+        "compensation_action": { "type": "string" },
+        "auto_rollback_on_failure": { "type": "boolean", "default": true }
+      }
+    },
+    "audit_events": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

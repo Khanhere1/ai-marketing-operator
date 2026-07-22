@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "metric-registry.schema.json",
+  "title": "Metric Definition Schema",
+  "type": "object",
+  "required": [
+    "metric_id",
+    "name",
+    "category",
+    "formula",
+    "classification"
+  ],
+  "properties": {
+    "metric_id": { "type": "string" },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "category": {
+      "type": "string",
+      "enum": ["acquisition", "engagement", "conversion", "revenue", "efficiency", "quality", "system"]
+    },
+    "formula": { "type": "string" },
+    "data_sources": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "owner_role": { "type": "string" },
+    "classification": {
+      "type": "string",
+      "enum": ["descriptive", "predictive", "causal"]
+    },
+    "thresholds": {
+      "type": "object",
+      "properties": {
+        "good": { "type": "number" },
+        "acceptable": { "type": "number" },
+        "poor": { "type": "number" }
+      }
+    }
+  }
+}

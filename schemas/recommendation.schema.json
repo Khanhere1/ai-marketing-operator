@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "recommendation.schema.json",
+  "title": "Marketing Recommendation Contract",
+  "type": "object",
+  "required": [
+    "id",
+    "organization_id",
+    "objective",
+    "baseline",
+    "evidence",
+    "data_quality",
+    "diagnosis",
+    "unresolved_questions",
+    "alternatives_considered",
+    "proposed_action",
+    "expected_mechanism",
+    "confidence",
+    "cost",
+    "risks",
+    "guardrails",
+    "measurement_plan",
+    "approval_requirement",
+    "short_sequence",
+    "long_sequence"
+  ],
+  "properties": {
+    "id": { "type": "string" },
+    "organization_id": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "proposed", "accepted", "rejected", "executed", "verified", "archived"],
+      "default": "proposed"
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "objective": { "type": "string" },
+    "baseline": {
+      "type": "object",
+      "required": ["metric", "current_value"],
+      "properties": {
+        "metric": { "type": "string" },
+        "current_value": { "type": "number" },
+        "unit": { "type": "string" },
+        "timeframe": { "type": "string" },
+        "source": { "type": "string" }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": { "$ref": "definitions.schema.json#/$defs/evidence_item" }
+    },
+    "data_quality": { "$ref": "definitions.schema.json#/$defs/data_quality_level" },
+    "assumptions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "unresolved_questions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "diagnosis": { "type": "string" },
+    "alternatives_considered": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["alternative", "reason_rejected"],
+        "properties": {
+          "alternative": { "type": "string" },
+          "reason_rejected": { "type": "string" }
+        }
+      }
+    },
+    "proposed_action": { "type": "string" },
+    "expected_mechanism": { "type": "string" },
+    "expected_outcome_range": {
+      "type": "object",
+      "required": ["min", "max", "unit"],
+      "properties": {
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "unit": { "type": "string" },
+        "timeframe": { "type": "string" }
+      }
+    },
+    "confidence": { "$ref": "definitions.schema.json#/$defs/confidence_level" },
+    "cost": {
+      "type": "object",
+      "required": ["direct_spend"],
+      "properties": {
+        "direct_spend": { "type": "number" },
+        "tool_cost": { "type": "number" },
+        "team_hours": { "type": "number" },
+        "opportunity_cost": { "type": "string" }
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "risks": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "guardrails": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "measurement_plan": {
+      "type": "object",
+      "required": ["primary_metric", "observation_window_days"],
+      "properties": {
+        "primary_metric": { "type": "string" },
+        "guardrail_metrics": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "observation_window_days": { "type": "integer" }
+      }
+    },
+    "approval_requirement": {
+      "type": "object",
+      "required": ["risk_class", "approver_role"],
+      "properties": {
+        "risk_class": { "$ref": "definitions.schema.json#/$defs/risk_class" },
+        "approver_role": { "type": "string" },
+        "expiry": { "type": "string", "format": "date-time" }
+      }
+    },
+    "rollback_guidance": { "type": "string" },
+    "short_sequence": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/task" }
+    },
+    "long_sequence": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/task" }
+    },
+    "next_review_at": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "task": {
+      "type": "object",
+      "required": [
+        "task_id",
+        "task",
+        "owner_role",
+        "priority",
+        "completion_evidence"
+      ],
+      "properties": {
+        "task_id": { "type": "string" },
+        "task": { "type": "string" },
+        "owner_role": { "type": "string" },
+        "priority": { "$ref": "definitions.schema.json#/$defs/priority" },
+        "expected_impact": { "type": "string" },
+        "confidence": { "$ref": "definitions.schema.json#/$defs/confidence_level" },
+        "action_capability_id": { "type": "string" },
+        "completion_evidence": { "type": "string" },
+        "success_metric": { "type": "string" }
+      }
+    }
+  }
+}

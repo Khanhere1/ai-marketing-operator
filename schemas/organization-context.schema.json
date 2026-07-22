@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "organization-context.schema.json",
+  "title": "Organization Context Pack",
+  "type": "object",
+  "required": [
+    "organization_id",
+    "name",
+    "industry",
+    "business_model",
+    "marketing_channels",
+    "gross_margin_assumptions",
+    "privacy_requirements"
+  ],
+  "properties": {
+    "organization_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "industry": {
+      "type": "string"
+    },
+    "size": {
+      "type": "string",
+      "enum": ["startup", "smb", "mid_market", "enterprise"]
+    },
+    "markets": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "business_model": {
+      "type": "string",
+      "enum": ["b2b_saas", "b2b_services", "b2c_ecommerce", "b2c_subscription", "marketplace", "other"]
+    },
+    "marketing_channels": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "gross_margin_assumptions": {
+      "type": "object",
+      "required": ["percentage"],
+      "properties": {
+        "percentage": { "type": "number" },
+        "blended_cac_target": { "type": "number" },
+        "payback_months_target": { "type": "number" }
+      }
+    },
+    "brand_guidelines_ref": {
+      "type": "string"
+    },
+    "approved_claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["claim_id", "text", "evidence_ref"],
+        "properties": {
+          "claim_id": { "type": "string" },
+          "text": { "type": "string" },
+          "evidence_ref": { "type": "string" },
+          "expiry": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "privacy_requirements": {
+      "type": "object",
+      "required": ["jurisdictions", "max_permitted_data_class"],
+      "properties": {
+        "jurisdictions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "consent_model": { "type": "string" },
+        "max_permitted_data_class": {
+          "type": "string",
+          "enum": ["public", "internal_nonsensitive", "confidential_business", "personal_data", "restricted"]
+        }
+      }
+    }
+  }
+}

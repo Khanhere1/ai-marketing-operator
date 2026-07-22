@@ -1,0 +1,32 @@
+{
+  "name": "ai-marketing-operator",
+  "version": "0.1.0",
+  "description": "Vendor-neutral, human-governed AI Marketing Operating System for evidence-driven performance analysis, CRM revenue reconciliation, paid media diagnosis, and bounded action execution.",
+  "author": "AI Marketing Operator Maintainers",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/ai-marketing-operator/ai-marketing-operator",
+  "capabilities": [
+    "paid_media_review",
+    "weekly_growth_review",
+    "crm_revenue_reconciliation",
+    "data_quality_assessment",
+    "action_contract_generation",
+    "audit_event_logging"
+  ],
+  "schemas": {
+    "definitions": "schemas/definitions.schema.json",
+    "recommendation": "schemas/recommendation.schema.json",
+    "action_contract": "schemas/action-contract.schema.json",
+    "event": "schemas/event.schema.json",
+    "organization_context": "schemas/organization-context.schema.json",
+    "metric_registry": "schemas/metric-registry.schema.json",
+    "data_quality": "schemas/data-quality.schema.json"
+  },
+  "workflows": {
+    "weekly_growth_review": "workflows/weekly-growth-review.yaml",
+    "paid_media_review": "workflows/paid-media-review.yaml"
+  },
+  "policies": {
+    "global_prohibitions": "policies/global-prohibitions.yaml"
+  }
+}

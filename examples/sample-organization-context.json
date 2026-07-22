@@ -1,0 +1,28 @@
+{
+  "organization_id": "org_acme_123",
+  "name": "Acme Analytics",
+  "industry": "Software / B2B SaaS",
+  "size": "smb",
+  "markets": ["US", "CA", "UK"],
+  "business_model": "b2b_saas",
+  "marketing_channels": ["google_ads", "linkedin_ads", "content_seo", "hubspot_email"],
+  "gross_margin_assumptions": {
+    "percentage": 78.5,
+    "blended_cac_target": 250,
+    "payback_months_target": 12
+  },
+  "brand_guidelines_ref": "https://acme.example/brand-guidelines.pdf",
+  "approved_claims": [
+    {
+      "claim_id": "claim_001",
+      "text": "Acme Analytics reduces customer churn by up to 24%",
+      "evidence_ref": "doc_case_study_2025_01.pdf",
+      "expiry": "2026-12-31T23:59:59Z"
+    }
+  ],
+  "privacy_requirements": {
+    "jurisdictions": ["US", "EU", "UK"],
+    "consent_model": "opt_in",
+    "max_permitted_data_class": "confidential_business"
+  }
+}

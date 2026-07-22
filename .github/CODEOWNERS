@@ -1,0 +1,18 @@
+# Global Maintainers
+*                   @ai-marketing-operator/core-maintainers
+
+# Core Schemas & Contracts
+/schemas/           @ai-marketing-operator/schema-maintainers
+
+# Governance & Policies
+/GOVERNANCE.md      @ai-marketing-operator/governance-team
+/SECURITY.md        @ai-marketing-operator/security-team
+/PRIVACY.md         @ai-marketing-operator/privacy-team
+/policies/          @ai-marketing-operator/governance-team
+
+# Workflows & Playbooks
+/workflows/         @ai-marketing-operator/marketing-domain
+/docs/              @ai-marketing-operator/docs-team
+
+# Evaluations & Golden Cases
+/evaluations/       @ai-marketing-operator/quality-team

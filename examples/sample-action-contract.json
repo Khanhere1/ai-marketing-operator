@@ -1,0 +1,46 @@
+{
+  "capability_id": "action_pause_ad_groups",
+  "version": "1.0.0",
+  "purpose": "Pause specific ad groups within an active paid advertising campaign",
+  "risk_class": "medium",
+  "reversible": true,
+  "idempotency_key_required": true,
+  "timeout_seconds": 30,
+  "max_retries": 3,
+  "partial_failure_handling": "abort",
+  "default_mode": "transaction_approval",
+  "required_permissions": [
+    "google_ads.campaigns.write",
+    "google_ads.ad_groups.write"
+  ],
+  "required_inputs": [
+    "customer_id",
+    "ad_group_ids"
+  ],
+  "preconditions": [
+    "ad_groups_currently_active",
+    "human_approval_signature_valid",
+    "approval_not_expired"
+  ],
+  "prohibited_conditions": [
+    "campaign_is_experiments_control_group"
+  ],
+  "verification": [
+    "read_back_ad_group_status_equals_paused",
+    "audit_event_emitted"
+  ],
+  "rollback": {
+    "steps": [
+      "Set status of ad_group_ids back to ENABLED via Google Ads API"
+    ],
+    "verification": "read_back_ad_group_status_equals_enabled",
+    "compensation_action": "notify_media_buyer_on_failure",
+    "auto_rollback_on_failure": true
+  },
+  "audit_events": [
+    "action_proposed",
+    "action_approved",
+    "action_executed",
+    "action_verified"
+  ]
+}

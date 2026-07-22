@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "data-quality.schema.json",
+  "title": "Data Quality Assessment Schema",
+  "type": "object",
+  "required": [
+    "assessment_id",
+    "data_source",
+    "completeness_score",
+    "overall_quality",
+    "quality_gate_passed"
+  ],
+  "properties": {
+    "assessment_id": { "type": "string" },
+    "data_source": { "type": "string" },
+    "assessed_at": { "type": "string", "format": "date-time" },
+    "completeness_score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "freshness": {
+      "type": "object",
+      "properties": {
+        "last_updated": { "type": "string", "format": "date-time" },
+        "staleness_hours": { "type": "number" }
+      }
+    },
+    "coverage_gaps": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "overall_quality": {
+      "type": "string",
+      "enum": ["high", "medium", "low", "insufficient"]
+    },
+    "quality_gate_passed": { "type": "boolean" },
+    "blocking_issues": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}
