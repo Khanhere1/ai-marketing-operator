@@ -1,17 +1,18 @@
 {
   "name": "ai-marketing-operator",
-  "version": "0.1.0",
-  "description": "Vendor-neutral, human-governed AI Marketing Operating System for evidence-driven performance analysis, CRM revenue reconciliation, paid media diagnosis, and bounded action execution.",
+  "version": "0.2.0",
+  "description": "Vendor-neutral, human-governed AI Marketing Operating System integrated with Agent-Reach for multi-platform social & market research (Twitter, Reddit, YouTube, GitHub, Bilibili, XiaoHongShu), CRM revenue reconciliation, paid media diagnosis, and bounded action execution.",
   "author": "AI Marketing Operator Maintainers",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/ai-marketing-operator/ai-marketing-operator",
+  "homepage": "https://github.com/Khanhere1/ai-marketing-operator",
   "capabilities": [
     "paid_media_review",
     "weekly_growth_review",
     "crm_revenue_reconciliation",
     "data_quality_assessment",
     "action_contract_generation",
-    "audit_event_logging"
+    "audit_event_logging",
+    "agent_reach_market_intelligence"
   ],
   "schemas": {
     "definitions": "schemas/definitions.schema.json",
@@ -21,6 +22,10 @@
     "organization_context": "schemas/organization-context.schema.json",
     "metric_registry": "schemas/metric-registry.schema.json",
     "data_quality": "schemas/data-quality.schema.json"
+  },
+  "connectors": {
+    "agent_reach": "connectors/agent_reach_adapter.py",
+    "agent_reach_module": "connectors/agent-reach"
   },
   "workflows": {
     "weekly_growth_review": "workflows/weekly-growth-review.yaml",
