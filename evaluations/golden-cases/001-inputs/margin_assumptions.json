@@ -1,0 +1,14 @@
+{
+  "organization_id": "acme-analytics-001",
+  "currency": "USD",
+  "gross_margin_percentage": 82,
+  "target_cac_usd": 120,
+  "target_ltv_usd": 14400,
+  "ltv_cac_ratio_target": 3.0,
+  "average_deal_size_usd": 4800,
+  "average_sales_cycle_days": 45,
+  "monthly_ad_budget_usd": 25000,
+  "cost_per_sql_target_usd": 85,
+  "assumptions_last_updated": "2026-07-15",
+  "fiscal_quarter": "Q3-2026"
+}

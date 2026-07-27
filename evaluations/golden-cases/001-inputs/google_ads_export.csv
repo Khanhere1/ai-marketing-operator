@@ -1,0 +1,16 @@
+Campaign,Ad Group,Keyword,Match Type,Impressions,Clicks,CTR,Avg CPC,Cost,Conversions,Conv Rate,Cost/Conv,Conv Value,ROAS
+Brand - Exact,Brand Terms,acme analytics,Exact,5000,800,16.0%,1.50,1200.00,120,15.0%,10.00,15000.00,12.50
+Brand - Exact,Brand Terms,acme data software,Exact,3000,450,15.0%,1.60,720.00,80,17.7%,9.00,12000.00,16.67
+Non-Brand - AI Software,AI Analytics,ai marketing analytics,Phrase,15000,450,3.0%,5.00,2250.00,45,10.0%,50.00,6750.00,3.00
+Non-Brand - AI Software,AI Analytics,ai analytics platform,Exact,12000,400,3.3%,5.50,2200.00,40,10.0%,55.00,6000.00,2.73
+Non-Brand - Predictive,Predictive Models,predictive marketing,Phrase,25000,600,2.4%,4.50,2700.00,60,10.0%,45.00,9000.00,3.33
+Competitor - TechA,Alternatives,techa alternative,Exact,8000,300,3.7%,8.00,2400.00,30,10.0%,80.00,4500.00,1.88
+Competitor - TechB,Alternatives,techb competitors,Phrase,10000,350,3.5%,7.50,2625.00,35,10.0%,75.00,5250.00,2.00
+Non-Brand - Broad,General Analytics,marketing data tools,Broad,45000,1200,2.6%,3.00,3600.00,120,10.0%,30.00,18000.00,5.00
+Non-Brand - Broad,General Analytics,business intelligence,Broad,55000,1500,2.7%,2.80,4200.00,150,10.0%,28.00,22500.00,5.36
+Brand - Phrase,Brand Extensions,acme pricing,Phrase,2000,300,15.0%,1.20,360.00,40,13.3%,9.00,6000.00,16.67
+Brand - Phrase,Brand Extensions,acme features,Phrase,2500,350,14.0%,1.30,455.00,45,12.8%,10.11,6750.00,14.83
+Non-Brand - SMB,Small Business,smb analytics software,Phrase,18000,500,2.7%,4.00,2000.00,50,10.0%,40.00,7500.00,3.75
+Competitor - TechC,Alternatives,techc pricing,Exact,5000,200,4.0%,9.00,1800.00,20,10.0%,90.00,3000.00,1.67
+Non-Brand - Enterprise,Enterprise,enterprise data platform,Exact,8000,250,3.1%,12.00,3000.00,25,10.0%,120.00,3750.00,1.25
+Non-Brand - Enterprise,Enterprise,enterprise marketing analytics,Phrase,12000,300,2.5%,11.00,3300.00,30,10.0%,110.00,4500.00,1.36

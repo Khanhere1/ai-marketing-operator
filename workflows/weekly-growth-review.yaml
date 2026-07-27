@@ -58,6 +58,13 @@ error_handling:
   on_policy_conflict: "escalate_to_human_reviewer"
   on_timeout: "save_checkpoint_and_retry"
 governance:
-  approval_required: false
+  approval_required: true
   audit_level: detailed
   risk_classification: low
+prompt_templates:
+  primary: "workflows/prompts/market-research.prompt.md"
+  competitor_analysis: "workflows/prompts/competitor-analysis.prompt.md"
+guardrail_thresholds:
+  blended_cac_max_usd: 200
+  lead_quality_rate_min: 0.20
+  incremental_revenue_growth_min: 0.05

@@ -69,3 +69,13 @@ governance:
   approval_required: true
   audit_level: detailed
   risk_classification: medium
+prompt_templates:
+  primary: "workflows/prompts/paid-media-review.prompt.md"
+  market_research: "workflows/prompts/market-research.prompt.md"
+  competitor_analysis: "workflows/prompts/competitor-analysis.prompt.md"
+guardrail_thresholds:
+  cpa_max_usd: 150
+  lead_acceptance_rate_min: 0.15
+  roas_min: 1.5
+  ad_spend_daily_max_usd: 5000
+  creative_fatigue_ctr_drop_threshold: 0.20
