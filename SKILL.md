@@ -1,118 +1,167 @@
 ---
 name: ai-marketing-operator
-description: Vendor-neutral, human-governed AI Marketing Operating System with LLM-powered specialist sub-agents, output validation, Agent-Reach integration for multi-platform social/market scraping (Twitter/X, Reddit, YouTube, GitHub, Bilibili, XiaoHongShu), evidence-driven performance analysis, CRM revenue reconciliation, paid media diagnosis, market research, content drafting, and bounded action execution. Activate this skill for all marketing, growth review, competitor analysis, paid media audit, lead quality diagnosis, SEO/AEO/GEO, or marketing operations tasks.
+description: Free-first AI Marketing Operating System that uses built-in agent tools (search_web, read_url_content, ego-browser) and free public APIs (Reddit, Hacker News, GitHub, Google Trends, Meta Ad Library, Google Ads Transparency) for real-time competitive intelligence, market research, paid media analysis, VoC extraction, ABM sequences, and content strategy. No paid API keys required. Activate this skill for ALL marketing, growth, competitor analysis, ad research, or marketing operations tasks.
 metadata:
-  version: "0.3.0"
+  version: "0.4.0"
   author: "AI Marketing Operator Maintainers"
   license: "Apache-2.0"
 ---
 
-# AI Marketing Operator Skill (v0.3.0)
+# AI Marketing Operator Skill (v0.4.0 — Free-First)
 
-This skill provides an evidence-driven, schema-governed operating framework for executing marketing activities, campaign diagnoses, paid media optimizations, multi-platform market research, content planning, and executive reporting.
+Evidence-driven marketing intelligence using **FREE tools only**. No paid API keys required.
+
+---
 
 ## 🎯 When to Use This Skill
 
-Activate this skill whenever performing:
-1. **Multi-Platform Market & Competitor Research:** Real-time competitive intelligence using web search, Agent-Reach scraping (Twitter/X, Reddit, YouTube, GitHub), and URL analysis with mandatory source citations.
-2. **Weekly Marketing & Growth Reviews:** Performance audits, anomaly detection, metric trend analysis with CRM reconciliation.
-3. **Paid Media Diagnosis:** Auditing Google Ads, Meta Ads, LinkedIn Ads against downstream CRM deals and true contribution margin.
-4. **Funnel & Lead Quality Assessment:** Diagnosing form-fill vs sales-acceptance bottlenecks.
-5. **Evidence-Backed Content & Creative Briefs:** Generating ad copy, email sequences, ABM playbooks, and landing page briefs with cited evidence.
-6. **Action Capability Contracts:** Preparing human-governed transaction packages for campaign changes with preflight checks and single-click rollbacks.
+Activate for ANY marketing task including:
+- Market research & competitor intelligence
+- Ad library research (Google Ads Transparency, Meta Ad Library)
+- VoC extraction (Reddit, G2, Capterra, Hacker News, Product Hunt)
+- Paid media diagnosis & campaign planning
+- SEO/AEO/GEO keyword strategy
+- ABM outbound sequences & email nurturing
+- Content strategy & landing page briefs
+- Weekly growth reviews & performance audits
 
 ---
 
-## 🏛️ Permanent Operating Principles
+## 🔧 How This Skill Works (Free-First)
 
-* **Evidence-First, Always Cited:** Every factual claim in output MUST include a `[Source: URL]` citation. Outputs below 80% citation density are flagged by the validation layer.
-* **Diagnose Before Acting:** Always establish baselines, data-quality scores, and cause-and-effect mechanisms before proposing campaign changes.
-* **Separate Concerns:** Explicitly label `[FACT]`, `[INFERENCE]`, and `[ASSUMPTION]` in all analysis outputs.
-* **CRM Reconciliation Over Platform Vanity:** Never represent platform-attributed conversions as proven incrementality without CRM cross-check.
-* **Bounded Autonomy & Governance:** 4-tier risk classification (`Low`, `Medium`, `High`, `Prohibited`). High-risk actions require explicit human approval.
-* **No Silent Fallbacks:** If a data source is unavailable, raise an error — never silently substitute mock data.
+This skill does NOT require paid APIs. It uses a tiered research approach:
 
----
+### Tier 1: Built-in Agent Tools (Always Available)
+Use these tools for every research task:
 
-## 🔌 Integrated Connectors & Adapters
+- **`search_web`** — Search Google for competitor data, pricing, product info, industry benchmarks, market trends
+- **`read_url_content`** — Read official pricing pages, product pages, press releases, blog posts to verify claims
+- **`ego-browser`** — Visit JavaScript-heavy pages like Meta Ad Library, Google Ads Transparency Center, Google Trends, review platforms
 
-* **Agent-Reach Connector:** `connectors/agent_reach_adapter.py` — Multi-platform social & web scraper. Raises `AgentReachUnavailableError` if CLI is not installed (no silent mocks).
-* **Google Ads Connector (Stub):** `connectors/google_ads_connector.py` — Requires API credentials (see docstring).
-* **Meta Ads Connector (Stub):** `connectors/meta_ads_connector.py` — Requires API credentials (see docstring).
-* **HubSpot Connector (Stub):** `connectors/hubspot_connector.py` — Requires API credentials (see docstring).
+### Tier 2: Free Public API Connector (`connectors/free_research_tools.py`)
+The graph engine automatically queries these free APIs:
 
----
+| Source | API | What It Provides | Auth? |
+|--------|-----|-------------------|-------|
+| Reddit | `reddit.com/search.json` | VoC, competitor discussions, pain points | ❌ None |
+| Hacker News | `hn.algolia.com/api` | Tech industry sentiment, product launches | ❌ None |
+| GitHub | `api.github.com/search` | Open source landscape, developer tools | ❌ None |
+| Google Trends | RSS feed | Trending search topics, keyword interest | ❌ None |
 
-## ⚙️ Prompt Templates
+### Tier 3: Browser-Accessible Sources (via ego-browser or read_url_content)
 
-* **Market Research:** `workflows/prompts/market-research.prompt.md` — Enforces source citations, fact/inference labeling, and ICE scoring methodology.
-* **Competitor Analysis:** `workflows/prompts/competitor-analysis.prompt.md` — Enforces product version verification, pricing source validation, and 90-day freshness.
-* **Paid Media Review:** `workflows/prompts/paid-media-review.prompt.md` — Enforces CRM reconciliation, causal mechanism requirements, and marginal return analysis.
+| Source | URL Pattern | What It Provides |
+|--------|------------|-------------------|
+| **Google Ads Transparency** | `adstransparency.google.com/?query=COMPANY` | Active ad creatives, messaging |
+| **Meta Ad Library** | `facebook.com/ads/library/?q=COMPANY` | Facebook/Instagram ad creatives |
+| **Google Trends** | `trends.google.com/trends/explore?q=KEYWORD` | Keyword interest over time |
+| **G2 Reviews** | `g2.com/search?query=PRODUCT` | Customer reviews, ratings, complaints |
+| **Capterra** | `capterra.com/search/?query=PRODUCT` | Software comparisons, reviews |
+| **TrustPilot** | `trustpilot.com/search?query=COMPANY` | Customer trust scores, feedback |
+| **Product Hunt** | `producthunt.com/search?q=PRODUCT` | Product launches, upvotes |
+| **AlternativeTo** | `alternativeto.net/browse/search/?q=PRODUCT` | Competitor alternatives |
 
----
-
-## 📁 Repository & Schema Contracts
-
-* **Shared Definitions:** `schemas/definitions.schema.json`
-* **Marketing Recommendation Contract:** `schemas/recommendation.schema.json`
-* **Action Capability Contract:** `schemas/action-contract.schema.json`
-* **Audit Event Schema:** `schemas/event.schema.json`
-* **Organization Context Pack:** `schemas/organization-context.schema.json`
-* **Metric Registry:** `schemas/metric-registry.schema.json`
-* **Data Quality Assessment:** `schemas/data-quality.schema.json`
-
-## ⚙️ Workflows
-
-* **Weekly Growth Review:** `workflows/weekly-growth-review.yaml`
-* **Paid Media Review:** `workflows/paid-media-review.yaml`
-* **Global Prohibitions Policy:** `policies/global-prohibitions.yaml`
-
----
-
-## ✅ Output Validation Layer
-
-All specialist outputs pass through `graph_engine/validators/output_validator.py` before delivery:
-
-1. **Citation Density Check** — Rejects outputs where <80% of factual claims lack `[Source: URL]` citations
-2. **Data Freshness Check** — Flags references to outdated product versions or stale data (>90 days)
-3. **Policy Compliance Check** — Detects unverified causal claims, absolute guarantee language, and platform metric misrepresentation
-4. **Content Substance Check** — Catches placeholder patterns, template variables, and insufficient output length
-
----
-
-## 🚀 Standard Execution Pipeline
-
-```text
-1. Market Intelligence & VoC Extraction (Agent-Reach → connectors/agent_reach_adapter.py)
-2. Data Ingestion & Quality Gate (schemas/data-quality.schema.json)
-3. Specialist Analysis (LLM-powered sub-agents with prompt templates):
-   a. SEO & Organic Search → workflows/prompts/market-research.prompt.md
-   b. Paid Media & Performance → workflows/prompts/paid-media-review.prompt.md
-   c. Content Strategy & ABM → workflows/prompts/market-research.prompt.md
-   d. Analyst Reviewer & Synthesis → Cross-specialist coherence check
-4. Output Validation Gate (graph_engine/validators/output_validator.py)
-5. Assurance Review (policies/global-prohibitions.yaml & Brand Claims)
-6. Action Contract Generation (schemas/action-contract.schema.json)
-7. Human Approval Gate
-8. Execution, Read-Back Verification & Audit Logging (schemas/event.schema.json)
-```
-
-## 🔑 LLM Configuration
-
-Sub-agents support OpenAI, Anthropic, and Google AI. Set one of these environment variables:
+### Tier 4: Paid LLM APIs (Optional Enhancement)
+If API keys are set, sub-agents use them for synthesis. NOT required.
 
 ```bash
-# Option 1: OpenAI
+# OPTIONAL — system works fully without these
 export OPENAI_API_KEY="sk-..."
-export OPENAI_MODEL="gpt-4o"  # optional, defaults to gpt-4o
-
-# Option 2: Anthropic
 export ANTHROPIC_API_KEY="sk-ant-..."
-export ANTHROPIC_MODEL="claude-sonnet-4-20250514"  # optional
-
-# Option 3: Google AI
 export GOOGLE_API_KEY="AIza..."
-export GOOGLE_MODEL="gemini-2.0-flash"  # optional
 ```
 
-If no API key is configured, sub-agents generate **prompt packages** for the Antigravity agent to execute using its built-in web search and URL reading capabilities.
+---
+
+## 🏛️ Operating Principles
+
+1. **Evidence-First, Always Cited**: Every claim MUST include `[Source: URL]`. Use `search_web` to find real URLs.
+2. **Verify Before Stating**: Use `read_url_content` on official websites to verify product names, versions, pricing.
+3. **Label Everything**: Mark claims as `[FACT]` (verified URL), `[INFERENCE]` (deduction), or `[ASSUMPTION]`.
+4. **No Silent Fallbacks**: If a data source fails, say so. Never substitute fake data.
+5. **CRM Over Platform Vanity**: Never present ad platform metrics as proven revenue.
+6. **Browser for Ad Research**: Use `ego-browser` for Meta Ad Library and Google Ads Transparency.
+
+---
+
+## 📋 Standard Research Workflow
+
+When the user asks for market research, competitor analysis, or any marketing task:
+
+```
+Step 1: SEARCH — Use search_web to find current data about the company/competitors
+Step 2: VERIFY — Use read_url_content on official websites to confirm product details, pricing
+Step 3: GATHER VOC — Search Reddit, G2, HN for customer sentiment (free_research_tools handles this)
+Step 4: AD RESEARCH — Use ego-browser to visit Meta Ad Library and Google Ads Transparency
+Step 5: ANALYZE — Synthesize evidence into structured output following prompt templates
+Step 6: VALIDATE — Check citation density (>80%), flag stale data, policy compliance
+Step 7: DELIVER — Present findings with clear [Source: URL] citations
+```
+
+---
+
+## 📁 Key Files
+
+### Prompt Templates (enforce citation rules)
+- `workflows/prompts/market-research.prompt.md` — Market research & VoC
+- `workflows/prompts/competitor-analysis.prompt.md` — Competitive intelligence
+- `workflows/prompts/paid-media-review.prompt.md` — Paid media & CRM reconciliation
+
+### Free Research Connector
+- `connectors/free_research_tools.py` — Reddit, HN, GitHub, Google Trends, ad library URL generators
+
+### Validation Layer
+- `graph_engine/validators/output_validator.py` — Citation density, freshness, policy compliance
+
+### Schema Contracts
+- `schemas/recommendation.schema.json` — Marketing recommendation structure
+- `schemas/organization-context.schema.json` — Company context
+- `schemas/data-quality.schema.json` — Data quality assessment
+
+### Workflows
+- `workflows/paid-media-review.yaml` — Paid media audit workflow
+- `workflows/weekly-growth-review.yaml` — Weekly growth review
+
+### Policies
+- `policies/global-prohibitions.yaml` — 11 prohibited actions (no fabrication, no deception, etc.)
+
+---
+
+## 🚀 Execution Pipeline
+
+```text
+1. Free API Research (Reddit, HN, GitHub → connectors/free_research_tools.py)
+2. Browser Research (Ad Libraries, Review Sites → ego-browser / read_url_content)
+3. Web Search Verification (search_web → official sources)
+4. Specialist Analysis:
+   a. SEO & Organic Search → Keywords, AEO/GEO, competitor rankings
+   b. Paid Media → Ad library research, channel strategy, budget framework
+   c. Content Strategy → VoC-driven ABM, content calendar, landing pages
+   d. Analyst Review → Cross-specialist synthesis, quality audit
+5. Output Validation (graph_engine/validators/output_validator.py)
+6. Human Review Gate
+```
+
+---
+
+## 💡 Example Usage
+
+### Market Research
+> "Research the competitive landscape for [Company] in [Industry]"
+→ Agent uses search_web + free APIs + read_url_content to gather real data
+
+### Ad Library Research
+> "What ads are [Competitor] running on Google and Meta?"
+→ Agent uses ego-browser to visit Google Ads Transparency + Meta Ad Library
+
+### VoC Extraction
+> "What are customers saying about [Product] on Reddit and G2?"
+→ Agent uses free_research_tools.search_reddit() + ego-browser for G2
+
+### Paid Media Audit
+> "Audit our Google Ads performance and suggest optimizations"
+→ Agent follows paid-media-review.prompt.md with CRM reconciliation rules
+
+### ABM Sequence
+> "Create a 5-touch outbound sequence for [Target Persona]"
+→ Agent uses VoC evidence from free APIs to craft evidence-backed messaging

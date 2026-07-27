@@ -1,24 +1,30 @@
 """
 Specialist Sub-Agent Nodes for LangGraph Graph Engineering Loop.
 
-REWRITTEN: These nodes now generate dynamic, context-aware analysis using
-structured prompt templates instead of returning static hardcoded text.
+v0.4.0 — FREE-FIRST EXECUTION MODEL
 
-Each specialist:
-1. Reads the objective, company name, and constraints from GraphState
-2. Loads the relevant prompt template from workflows/prompts/
-3. Constructs a role-specific analysis prompt
-4. Returns structured output with evidence requirements and citation rules
+These nodes gather REAL data using free public APIs and browser-accessible
+sources. No paid API keys required.
 
-When integrated with an LLM runtime (OpenAI, Anthropic, Google AI), 
-these nodes invoke real model calls. Without an LLM key configured,
-they generate structured prompt packages that the Antigravity agent
-can execute via its own tools (web search, URL reading).
+Research priority order:
+  1. Free public APIs (Reddit, Hacker News, GitHub — via free_research_tools.py)
+  2. Antigravity agent's built-in tools (search_web, read_url_content)
+  3. ego-browser for JS-heavy pages (Meta Ad Library, Google Ads Transparency)
+  4. Paid LLM APIs (OpenAI, Anthropic, Google) — ONLY if explicitly configured
+
+Each specialist node:
+  1. Calls free_research_tools to gather real evidence from public APIs
+  2. Loads the relevant prompt template from workflows/prompts/
+  3. Synthesizes the gathered evidence into structured analysis
+  4. If an LLM API key is available, uses it for synthesis
+  5. If no LLM key, outputs the raw evidence + structured research brief
+     for the Antigravity agent to synthesize using its own capabilities
 """
 
 import os
 import json
 import logging
+import importlib.util
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 from ..state import GraphState, SubAgentOutput, TaskItem
@@ -29,6 +35,19 @@ logger = logging.getLogger(__name__)
 PROMPTS_DIR = os.path.join(
     os.path.dirname(__file__), "..", "..", "workflows", "prompts"
 )
+
+# Import free research tools
+_free_tools = None
+try:
+    _tools_path = os.path.join(
+        os.path.dirname(__file__), "..", "..", "connectors", "free_research_tools.py"
+    )
+    spec = importlib.util.spec_from_file_location("free_research_tools", _tools_path)
+    _free_tools = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(_free_tools)
+    logger.info("Free research tools loaded successfully")
+except Exception as e:
+    logger.warning("Could not load free research tools: %s", str(e))
 
 
 def _load_prompt_template(filename: str) -> str:
@@ -44,8 +63,8 @@ def _load_prompt_template(filename: str) -> str:
 
 def _get_llm_client():
     """
-    Attempt to initialize an LLM client. Returns None if no API key is configured.
-    Supports OpenAI, Anthropic, and Google AI in priority order.
+    Attempt to initialize an LLM client. Returns None if no API key configured.
+    This is OPTIONAL — the system works fully without it using free tools.
     """
     # Try OpenAI
     openai_key = os.environ.get("OPENAI_API_KEY")
@@ -54,7 +73,7 @@ def _get_llm_client():
             import openai
             return {"provider": "openai", "client": openai.OpenAI(api_key=openai_key)}
         except ImportError:
-            logger.info("OpenAI key found but 'openai' package not installed.")
+            pass
 
     # Try Anthropic
     anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
@@ -63,7 +82,7 @@ def _get_llm_client():
             import anthropic
             return {"provider": "anthropic", "client": anthropic.Anthropic(api_key=anthropic_key)}
         except ImportError:
-            logger.info("Anthropic key found but 'anthropic' package not installed.")
+            pass
 
     # Try Google AI
     google_key = os.environ.get("GOOGLE_API_KEY")
@@ -73,35 +92,21 @@ def _get_llm_client():
             genai.configure(api_key=google_key)
             return {"provider": "google", "client": genai}
         except ImportError:
-            logger.info("Google key found but 'google-generativeai' package not installed.")
+            pass
 
     return None
 
 
-def _call_llm(system_prompt: str, user_prompt: str, llm_client: Optional[Dict] = None) -> str:
+def _call_llm(system_prompt: str, user_prompt: str, llm_client: Optional[Dict] = None) -> Optional[str]:
     """
-    Call an LLM with the given prompts. If no LLM client is available,
-    returns a structured prompt package for the Antigravity agent to execute.
+    Call an LLM with the given prompts. Returns None if no LLM is available.
+    The caller should handle None by using the raw evidence directly.
     """
     if llm_client is None:
         llm_client = _get_llm_client()
 
     if llm_client is None:
-        # No LLM configured — return the prompt package for the Antigravity
-        # agent to execute via its own capabilities (web search, URL reading)
-        return (
-            f"## ⚠️ LLM API NOT CONFIGURED — PROMPT PACKAGE FOR AGENT EXECUTION\n\n"
-            f"No LLM API key found (checked: OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY). "
-            f"The Antigravity agent should execute this analysis using its built-in web search "
-            f"and URL reading tools.\n\n"
-            f"### System Instructions\n\n{system_prompt}\n\n"
-            f"### Analysis Request\n\n{user_prompt}\n\n"
-            f"### Required Actions\n\n"
-            f"1. Use web search to gather real, current data for each section\n"
-            f"2. Verify all competitor names, product versions, and pricing via official sources\n"
-            f"3. Include `[Source: URL]` citations for every factual claim\n"
-            f"4. Follow the output structure defined in the system instructions above\n"
-        )
+        return None
 
     provider = llm_client["provider"]
     client = llm_client["client"]
@@ -141,13 +146,87 @@ def _call_llm(system_prompt: str, user_prompt: str, llm_client: Optional[Dict] =
 
     except Exception as e:
         logger.error("LLM call failed (%s): %s", provider, str(e))
-        return (
-            f"## ⚠️ LLM CALL FAILED\n\n"
-            f"Provider: {provider}\n"
-            f"Error: {str(e)}\n\n"
-            f"### Fallback: Use Antigravity agent tools to complete this analysis.\n\n"
-            f"### Analysis Request\n\n{user_prompt}\n"
+        return None
+
+
+def _gather_evidence(query: str, company_name: str) -> Dict[str, Any]:
+    """
+    Gather real evidence using free public APIs.
+    Returns a dict with evidence_items and browser_research_urls.
+    """
+    if _free_tools is None:
+        return {
+            "evidence_items": [],
+            "browser_research_urls": {},
+            "errors": ["Free research tools module not available"],
+        }
+
+    try:
+        return _free_tools.gather_free_intelligence(
+            query=query,
+            company_name=company_name,
+            platforms=["reddit", "hackernews", "github"],
         )
+    except Exception as e:
+        logger.error("Free intelligence gathering failed: %s", str(e))
+        return {
+            "evidence_items": [],
+            "browser_research_urls": {},
+            "errors": [str(e)],
+        }
+
+
+def _format_evidence_section(evidence: Dict[str, Any]) -> str:
+    """Format gathered evidence into a readable markdown section."""
+    lines = ["## 📊 Real Evidence Gathered (Free Public APIs)\n"]
+
+    items = evidence.get("evidence_items", [])
+    if items:
+        lines.append(f"**{len(items)} evidence items found** across "
+                      f"{len(set(i.get('source', '') for i in items))} platforms.\n")
+
+        # Group by source
+        by_source = {}
+        for item in items:
+            src = item.get("source", "Unknown")
+            by_source.setdefault(src, []).append(item)
+
+        for source, src_items in by_source.items():
+            lines.append(f"\n### {source} ({len(src_items)} results)\n")
+            for item in src_items[:5]:
+                title = item.get("title", "Untitled")
+                url = item.get("source_url", "")
+                score = item.get("score", item.get("points", ""))
+                lines.append(f"- **{title}**")
+                if url:
+                    lines.append(f"  [Source: {url}]")
+                if score:
+                    lines.append(f"  Score/Points: {score}")
+                text = item.get("text", item.get("description", ""))
+                if text:
+                    lines.append(f"  > {text[:200]}")
+                lines.append("")
+    else:
+        lines.append("⚠️ No evidence items gathered from free APIs.\n")
+
+    # Browser research URLs
+    urls = evidence.get("browser_research_urls", {})
+    if urls:
+        lines.append("\n### 🌐 Browser Research URLs (for deeper investigation)\n")
+        lines.append("Use `search_web`, `read_url_content`, or `ego-browser` to visit:\n")
+        for name, url in urls.items():
+            lines.append(f"- **{name}**: {url}")
+        lines.append("")
+
+    # Errors
+    errors = evidence.get("errors", [])
+    if errors:
+        lines.append("\n### ⚠️ Research Errors\n")
+        for err in errors:
+            lines.append(f"- {err}")
+        lines.append("")
+
+    return "\n".join(lines)
 
 
 def _build_context_block(state: GraphState) -> str:
@@ -167,14 +246,46 @@ def _build_context_block(state: GraphState) -> str:
     if feedback:
         context += f"\n**Previous Feedback (address this)**: {feedback}\n"
 
-    # Include prior specialist outputs for downstream agents
-    prior_outputs = state.get("agent_outputs", [])
-    if prior_outputs:
-        context += "\n**Prior Specialist Outputs Available**:\n"
-        for out in prior_outputs:
-            context += f"- [{out.get('specialist', 'unknown').upper()}] {out.get('title', 'Untitled')}\n"
-
     return context
+
+
+def _build_agent_research_brief(
+    specialist: str,
+    company_name: str,
+    objective: str,
+    evidence: Dict[str, Any],
+    analysis_request: str,
+    prompt_template: str,
+) -> str:
+    """
+    Build a complete research brief that the Antigravity agent can execute
+    using its built-in tools (search_web, read_url_content, ego-browser).
+
+    This is the FREE execution path — no paid LLM APIs needed.
+    """
+    evidence_section = _format_evidence_section(evidence)
+
+    return (
+        f"# {company_name} — {specialist.replace('_', ' ').title()} Analysis\n\n"
+        f"**Generated**: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}\n"
+        f"**Mode**: Free Research (no paid API keys)\n\n"
+        f"---\n\n"
+        f"{evidence_section}\n\n"
+        f"---\n\n"
+        f"## 🔍 Analysis Request for Antigravity Agent\n\n"
+        f"Use your built-in tools to complete this analysis:\n\n"
+        f"1. **`search_web`** — Search for current {company_name} pricing, "
+        f"product pages, and competitor comparisons\n"
+        f"2. **`read_url_content`** — Read the official websites and verify "
+        f"product names, versions, and pricing\n"
+        f"3. **`ego-browser`** — Visit the Ad Library and Transparency Center "
+        f"URLs listed above to research competitor ads\n\n"
+        f"### Specific Research Tasks\n\n"
+        f"{analysis_request}\n\n"
+        f"### Prompt Template Instructions\n\n"
+        f"Follow these rules when producing the final analysis:\n\n"
+        f"{prompt_template[:2000] if prompt_template else 'No prompt template loaded.'}\n"
+    )
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -184,50 +295,52 @@ def _build_context_block(state: GraphState) -> str:
 def seo_specialist_node(state: GraphState) -> Dict[str, Any]:
     """
     SEO & Organic Search Specialist Sub-Agent Node.
-
-    Performs keyword research, competitive search analysis, and 
-    AEO/GEO optimization strategy using real data.
+    Gathers real search data from free APIs, then analyzes.
     """
     company_name = state.get("company_name", "Unknown")
     objective = state.get("objective", "")
     agent_outputs = list(state.get("agent_outputs", []))
     logs = list(state.get("logs", []))
 
-    logs.append(f"[SEO Specialist Node] Executing search analysis for {company_name}")
+    logs.append(f"[SEO Specialist] Gathering real search data for {company_name}")
 
-    # Load prompt template
-    system_prompt = _load_prompt_template("market-research.prompt.md")
-    if not system_prompt:
-        system_prompt = (
-            "You are a senior SEO and organic search strategist. "
-            "Every claim must include a [Source: URL] citation. "
-            "Never fabricate keyword volumes, rankings, or competitor data."
-        )
+    # 1. Gather real evidence from free APIs
+    evidence = _gather_evidence(f"{company_name} SEO keywords organic search", company_name)
+    logs.append(f"[SEO Specialist] Gathered {len(evidence.get('evidence_items', []))} evidence items")
 
-    # Build analysis request
-    context = _build_context_block(state)
-    user_prompt = (
-        f"# SEO & Organic Search Analysis Request\n\n"
-        f"{context}\n\n"
-        f"## Required Analysis\n\n"
-        f"1. **High-Intent Keyword Clusters**: Identify 5-8 keyword clusters relevant to "
-        f"{company_name}'s positioning. For each cluster:\n"
-        f"   - Primary keyword and estimated search intent category\n"
-        f"   - Top 3 competing pages currently ranking (with URLs)\n"
-        f"   - Content gap or opportunity\n\n"
-        f"2. **AEO/GEO Optimization Strategy**: How should {company_name} structure content "
-        f"for AI-powered search engines (Perplexity, Google AI Overviews, ChatGPT search)?\n"
-        f"   - Recommended schema markup types\n"
-        f"   - FAQ/answer targeting opportunities\n\n"
-        f"3. **Competitive Search Positioning**: Which competitors dominate the target "
-        f"keyword space? What messaging angles do they use?\n\n"
-        f"4. **Quick Win Opportunities**: 3-5 tactical SEO actions that can be "
-        f"implemented within 2 weeks.\n\n"
-        f"**CRITICAL**: Use web search to verify all keyword data and competitor rankings. "
+    # 2. Load prompt template
+    prompt_template = _load_prompt_template("market-research.prompt.md")
+
+    # 3. Build analysis request
+    analysis_request = (
+        f"1. **Keyword Research**: Search for '{company_name}' + related terms. "
+        f"Identify 5-8 high-intent keyword clusters from real search data.\n"
+        f"2. **Competitor Search Positioning**: Which competitors rank for "
+        f"'{company_name}' keywords? Use search_web to check.\n"
+        f"3. **AEO/GEO Strategy**: How should {company_name} optimize for "
+        f"AI-powered search (Perplexity, Google AI Overviews)?\n"
+        f"4. **Quick Wins**: 3-5 tactical SEO actions based on real data.\n\n"
         f"Include [Source: URL] for every factual claim."
     )
 
-    content = _call_llm(system_prompt, user_prompt)
+    # 4. Try LLM synthesis if available, otherwise output research brief
+    context = _build_context_block(state)
+    evidence_text = _format_evidence_section(evidence)
+
+    llm_result = _call_llm(
+        system_prompt=prompt_template or "You are a senior SEO strategist. Cite all sources.",
+        user_prompt=f"{context}\n\n{evidence_text}\n\nAnalyze this evidence and produce:\n{analysis_request}",
+    )
+
+    if llm_result:
+        content = llm_result
+        data_source = "free_apis_plus_llm"
+    else:
+        content = _build_agent_research_brief(
+            "seo_specialist", company_name, objective,
+            evidence, analysis_request, prompt_template,
+        )
+        data_source = "free_apis_plus_agent_brief"
 
     output: SubAgentOutput = {
         "task_id": f"task_{company_name.lower().replace(' ', '_')}_seo_1",
@@ -237,18 +350,16 @@ def seo_specialist_node(state: GraphState) -> Dict[str, Any]:
         "metadata": {
             "status": "SUCCESS",
             "generated_at": datetime.now(timezone.utc).isoformat(),
-            "prompt_template": "market-research.prompt.md",
-            "data_source": "llm_generated" if _get_llm_client() else "prompt_package",
+            "evidence_items_count": len(evidence.get("evidence_items", [])),
+            "data_source": data_source,
+            "research_urls": evidence.get("browser_research_urls", {}),
         },
     }
 
     agent_outputs.append(output)
-    logs.append(f"[SEO Specialist Node] Completed analysis ({len(content)} chars)")
+    logs.append(f"[SEO Specialist] Complete ({len(content)} chars, {data_source})")
 
-    return {
-        "agent_outputs": agent_outputs,
-        "logs": logs,
-    }
+    return {"agent_outputs": agent_outputs, "logs": logs}
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -258,51 +369,62 @@ def seo_specialist_node(state: GraphState) -> Dict[str, Any]:
 def paid_media_specialist_node(state: GraphState) -> Dict[str, Any]:
     """
     Paid Media & Performance Ads Specialist Sub-Agent Node.
-
-    Designs campaign architectures, audits ad performance, and 
-    recommends budget allocations with CRM reconciliation.
+    Uses free ad library research and public benchmarks.
     """
     company_name = state.get("company_name", "Unknown")
     objective = state.get("objective", "")
     agent_outputs = list(state.get("agent_outputs", []))
     logs = list(state.get("logs", []))
 
-    logs.append(f"[Paid Media Specialist Node] Designing campaigns for {company_name}")
+    logs.append(f"[Paid Media Specialist] Researching ad landscape for {company_name}")
 
-    system_prompt = _load_prompt_template("paid-media-review.prompt.md")
-    if not system_prompt:
-        system_prompt = (
-            "You are a senior performance marketing specialist. "
-            "Never present platform-attributed metrics as proven revenue. "
-            "CRM reconciliation is mandatory. Include [Source: URL] for all claims."
-        )
+    # 1. Gather real evidence
+    evidence = _gather_evidence(f"{company_name} advertising paid ads campaign", company_name)
 
-    context = _build_context_block(state)
-    user_prompt = (
-        f"# Paid Media Campaign Architecture & Performance Analysis\n\n"
-        f"{context}\n\n"
-        f"## Required Analysis\n\n"
-        f"1. **Channel Strategy**: Recommend 2-4 paid channels for {company_name} based on:\n"
-        f"   - Target audience profile and where they consume content\n"
-        f"   - Competitor ad activity (search Meta Ad Library, Google Ads Transparency)\n"
-        f"   - Expected CPM/CPC benchmarks for the industry [Source: URL]\n\n"
-        f"2. **Campaign Architecture**: For each recommended channel:\n"
-        f"   - Campaign structure (campaigns, ad groups/sets, targeting)\n"
-        f"   - Audience segments with rationale\n"
-        f"   - Budget allocation recommendation with expected returns\n\n"
-        f"3. **Ad Copy & Creative Direction**: Draft 2-3 ad variations per channel:\n"
-        f"   - Headline, body, CTA\n"
-        f"   - Messaging angle tied to VoC/competitor analysis\n\n"
-        f"4. **Measurement Framework**:\n"
-        f"   - Primary KPIs per channel\n"
-        f"   - CRM reconciliation plan (platform conversions vs actual revenue)\n"
-        f"   - Attribution model recommendation\n\n"
-        f"**CRITICAL**: Research actual ad benchmarks for {company_name}'s industry. "
-        f"Never fabricate CPM/CPC/ROAS numbers. "
-        f"If data is unavailable, state: '⚠️ BENCHMARK DATA UNAVAILABLE'."
+    # Add ad library URLs specifically
+    if _free_tools:
+        evidence.setdefault("browser_research_urls", {}).update({
+            "google_ads_transparency": _free_tools.get_google_ads_transparency_url(company_name),
+            "meta_ad_library": _free_tools.get_meta_ad_library_url(company_name),
+        })
+
+    logs.append(f"[Paid Media Specialist] Gathered {len(evidence.get('evidence_items', []))} evidence items")
+
+    # 2. Load prompt template
+    prompt_template = _load_prompt_template("paid-media-review.prompt.md")
+
+    # 3. Build analysis request
+    analysis_request = (
+        f"1. **Competitor Ad Research**: Visit the Google Ads Transparency Center "
+        f"and Meta Ad Library URLs to see what ads {company_name} and competitors run.\n"
+        f"2. **Channel Strategy**: Recommend 2-4 paid channels based on the "
+        f"evidence gathered and industry benchmarks.\n"
+        f"3. **Ad Copy Drafts**: Write 2-3 ad variations per channel based on "
+        f"VoC themes and competitor gaps found in the evidence.\n"
+        f"4. **Budget Framework**: Recommend allocation with benchmarks from "
+        f"search_web (search for '[industry] average CPC 2026').\n"
+        f"5. **CRM Reconciliation Plan**: How to track real revenue, not just clicks.\n\n"
+        f"⚠️ NEVER fabricate CPC/CPM benchmarks. Search for real data or state 'benchmark unavailable'.\n"
+        f"Include [Source: URL] for every factual claim."
     )
 
-    content = _call_llm(system_prompt, user_prompt)
+    context = _build_context_block(state)
+    evidence_text = _format_evidence_section(evidence)
+
+    llm_result = _call_llm(
+        system_prompt=prompt_template or "You are a performance marketing expert. Cite all sources.",
+        user_prompt=f"{context}\n\n{evidence_text}\n\nAnalyze and produce:\n{analysis_request}",
+    )
+
+    if llm_result:
+        content = llm_result
+        data_source = "free_apis_plus_llm"
+    else:
+        content = _build_agent_research_brief(
+            "paid_media_specialist", company_name, objective,
+            evidence, analysis_request, prompt_template,
+        )
+        data_source = "free_apis_plus_agent_brief"
 
     output: SubAgentOutput = {
         "task_id": f"task_{company_name.lower().replace(' ', '_')}_paid_2",
@@ -312,18 +434,19 @@ def paid_media_specialist_node(state: GraphState) -> Dict[str, Any]:
         "metadata": {
             "status": "SUCCESS",
             "generated_at": datetime.now(timezone.utc).isoformat(),
-            "prompt_template": "paid-media-review.prompt.md",
-            "data_source": "llm_generated" if _get_llm_client() else "prompt_package",
+            "evidence_items_count": len(evidence.get("evidence_items", [])),
+            "data_source": data_source,
+            "ad_library_urls": {
+                "google": evidence.get("browser_research_urls", {}).get("google_ads_transparency", ""),
+                "meta": evidence.get("browser_research_urls", {}).get("meta_ad_library", ""),
+            },
         },
     }
 
     agent_outputs.append(output)
-    logs.append(f"[Paid Media Specialist Node] Completed analysis ({len(content)} chars)")
+    logs.append(f"[Paid Media Specialist] Complete ({len(content)} chars, {data_source})")
 
-    return {
-        "agent_outputs": agent_outputs,
-        "logs": logs,
-    }
+    return {"agent_outputs": agent_outputs, "logs": logs}
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -333,28 +456,31 @@ def paid_media_specialist_node(state: GraphState) -> Dict[str, Any]:
 def content_strategy_specialist_node(state: GraphState) -> Dict[str, Any]:
     """
     Content Strategy & ABM Sub-Agent Node.
-
-    Creates evidence-backed content plans, ABM sequences, and 
-    landing page specifications.
+    Uses real VoC data and competitor content research.
     """
     company_name = state.get("company_name", "Unknown")
     objective = state.get("objective", "")
     agent_outputs = list(state.get("agent_outputs", []))
     logs = list(state.get("logs", []))
 
-    logs.append(f"[Content Strategy Node] Drafting ABM sequences for {company_name}")
+    logs.append(f"[Content Strategy] Researching content landscape for {company_name}")
 
-    system_prompt = _load_prompt_template("market-research.prompt.md")
-    if not system_prompt:
-        system_prompt = (
-            "You are a senior content strategist and ABM specialist. "
-            "All messaging must be evidence-backed. "
-            "Include [Source: URL] citations for competitive claims."
-        )
+    # 1. Gather VoC and content evidence
+    evidence = _gather_evidence(
+        f"{company_name} reviews feedback customer experience", company_name
+    )
 
-    context = _build_context_block(state)
+    # Add review platform URLs
+    if _free_tools:
+        review_urls = _free_tools.get_review_platform_urls(company_name)
+        evidence.setdefault("browser_research_urls", {}).update(review_urls)
 
-    # Reference prior specialist outputs for coherent strategy
+    logs.append(f"[Content Strategy] Gathered {len(evidence.get('evidence_items', []))} evidence items")
+
+    # 2. Load prompt template
+    prompt_template = _load_prompt_template("market-research.prompt.md")
+
+    # 3. Reference prior specialist outputs
     seo_insights = ""
     paid_insights = ""
     for out in state.get("agent_outputs", []):
@@ -363,55 +489,61 @@ def content_strategy_specialist_node(state: GraphState) -> Dict[str, Any]:
         elif out.get("specialist") == "paid_media":
             paid_insights = out.get("content", "")[:1000]
 
-    user_prompt = (
-        f"# Content Strategy & ABM Playbook\n\n"
-        f"{context}\n\n"
-        f"## Prior Specialist Insights\n\n"
-        f"### SEO Insights (Summary)\n{seo_insights[:500] if seo_insights else 'Not yet available'}\n\n"
-        f"### Paid Media Insights (Summary)\n{paid_insights[:500] if paid_insights else 'Not yet available'}\n\n"
-        f"## Required Analysis\n\n"
-        f"1. **Multi-Touch ABM Outbound Sequence** (5-7 touches):\n"
-        f"   - For each touch: Channel, timing, subject/headline, body draft, CTA\n"
-        f"   - Personalization variables and segmentation logic\n"
-        f"   - Message angles derived from VoC research (cite evidence)\n\n"
-        f"2. **Content Calendar** (Next 30 Days):\n"
-        f"   - Content type, topic, target keyword, distribution channel\n"
-        f"   - Aligned with SEO keyword clusters and paid media messaging\n\n"
-        f"3. **Landing Page Specification**:\n"
-        f"   - Hero section: headline, subheadline, primary CTA\n"
-        f"   - Value proposition blocks with evidence points\n"
-        f"   - Social proof and trust elements\n"
-        f"   - Conversion form fields and progressive profiling strategy\n\n"
-        f"4. **Email Nurture Sequence** (Post-conversion):\n"
-        f"   - 4-6 email drip sequence for marketing-qualified leads\n"
-        f"   - Each email: subject, preview text, body outline, CTA\n\n"
-        f"**CRITICAL**: All messaging angles must reference competitor weaknesses "
-        f"or customer pain points discovered in prior analysis. "
-        f"No generic placeholder content."
+    # 4. Build analysis request
+    analysis_request = (
+        f"1. **VoC-Driven ABM Sequence** (5-7 touches): Use the Reddit/HN "
+        f"evidence above to identify real pain points and build messaging "
+        f"that addresses them. Each touch: channel, timing, subject, body, CTA.\n"
+        f"2. **Content Calendar** (30 days): Based on SEO keywords and "
+        f"VoC themes from evidence. Research competitor content via "
+        f"review platform URLs.\n"
+        f"3. **Landing Page Spec**: Hero, value props, social proof, CTA.\n"
+        f"4. **Email Nurture Sequence**: 4-6 drip emails for post-conversion.\n\n"
+        f"Use actual quotes/themes from the evidence. No generic placeholders.\n"
+        f"Include [Source: URL] for every claim."
     )
 
-    content = _call_llm(system_prompt, user_prompt)
+    context = _build_context_block(state)
+    evidence_text = _format_evidence_section(evidence)
+
+    prior_context = ""
+    if seo_insights:
+        prior_context += f"\n### Prior SEO Insights\n{seo_insights[:500]}\n"
+    if paid_insights:
+        prior_context += f"\n### Prior Paid Media Insights\n{paid_insights[:500]}\n"
+
+    llm_result = _call_llm(
+        system_prompt=prompt_template or "You are a content strategist. Cite sources.",
+        user_prompt=f"{context}\n{prior_context}\n\n{evidence_text}\n\nProduce:\n{analysis_request}",
+    )
+
+    if llm_result:
+        content = llm_result
+        data_source = "free_apis_plus_llm"
+    else:
+        content = _build_agent_research_brief(
+            "content_strategy", company_name, objective,
+            evidence, analysis_request, prompt_template,
+        )
+        data_source = "free_apis_plus_agent_brief"
 
     output: SubAgentOutput = {
         "task_id": f"task_{company_name.lower().replace(' ', '_')}_content_3",
         "specialist": "content_strategy",
-        "title": f"{company_name} ABM & Content Strategy",
+        "title": f"{company_name} Content & ABM Strategy",
         "content": content,
         "metadata": {
             "status": "SUCCESS",
             "generated_at": datetime.now(timezone.utc).isoformat(),
-            "prompt_template": "market-research.prompt.md",
-            "data_source": "llm_generated" if _get_llm_client() else "prompt_package",
+            "evidence_items_count": len(evidence.get("evidence_items", [])),
+            "data_source": data_source,
         },
     }
 
     agent_outputs.append(output)
-    logs.append(f"[Content Strategy Node] Completed analysis ({len(content)} chars)")
+    logs.append(f"[Content Strategy] Complete ({len(content)} chars, {data_source})")
 
-    return {
-        "agent_outputs": agent_outputs,
-        "logs": logs,
-    }
+    return {"agent_outputs": agent_outputs, "logs": logs}
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -421,94 +553,92 @@ def content_strategy_specialist_node(state: GraphState) -> Dict[str, Any]:
 def analyst_reviewer_node(state: GraphState) -> Dict[str, Any]:
     """
     Analyst Reviewer Sub-Agent Node.
-    
-    Synthesizes all specialist deliverables into a unified executive 
-    strategy with cross-specialist coherence checks and policy validation.
+    Synthesizes all specialist outputs with quality checks.
     """
     company_name = state.get("company_name", "Unknown")
     objective = state.get("objective", "")
     agent_outputs = list(state.get("agent_outputs", []))
     logs = list(state.get("logs", []))
 
-    logs.append(f"[Analyst Reviewer Node] Consolidating GTM strategy for {company_name}")
+    logs.append(f"[Analyst Reviewer] Consolidating strategy for {company_name}")
 
     system_prompt = (
-        "You are a senior marketing analyst and strategy reviewer. Your role is to:\n"
+        "You are a senior marketing analyst. Your role is to:\n"
         "1. Synthesize outputs from SEO, Paid Media, and Content Strategy specialists\n"
-        "2. Check for cross-specialist coherence (messaging alignment, audience overlap)\n"
-        "3. Identify gaps, contradictions, or unsupported claims across deliverables\n"
-        "4. Produce an executive-level GTM playbook with clear phased execution plan\n"
-        "5. Flag any claims that lack [Source: URL] citations\n"
-        "6. Validate compliance with global prohibitions policy\n\n"
-        "## QUALITY CHECKS TO PERFORM:\n"
-        "- [ ] All factual claims have source citations\n"
-        "- [ ] No fabricated product names, versions, or pricing\n"
-        "- [ ] Competitor data is current (within 90 days)\n"
-        "- [ ] Platform metrics are not presented as proven revenue\n"
-        "- [ ] Budget recommendations include marginal return analysis\n"
-        "- [ ] Messaging angles are consistent across channels\n"
+        "2. Check cross-specialist coherence (messaging alignment, audience overlap)\n"
+        "3. Identify gaps, contradictions, or unsupported claims\n"
+        "4. Produce an executive GTM playbook with phased execution plan\n"
+        "5. Flag any claims lacking [Source: URL] citations\n"
     )
 
-    # Compile all specialist outputs
+    # Compile specialist outputs
     specialist_summaries = []
+    total_evidence = 0
     for out in agent_outputs:
         specialist = out.get("specialist", "unknown")
         title = out.get("title", "Untitled")
         content = out.get("content", "")
+        evidence_count = out.get("metadata", {}).get("evidence_items_count", 0)
+        total_evidence += evidence_count
         specialist_summaries.append(
-            f"### [{specialist.upper()}] {title}\n\n{content}\n"
+            f"### [{specialist.upper()}] {title}\n"
+            f"*Evidence items: {evidence_count}*\n\n{content}\n"
         )
 
     context = _build_context_block(state)
-    compiled_outputs = "\n---\n\n".join(specialist_summaries) if specialist_summaries else "No prior specialist outputs available."
+    compiled = "\n---\n\n".join(specialist_summaries) if specialist_summaries else "No prior outputs."
 
-    user_prompt = (
-        f"# Executive GTM Strategy Synthesis & Quality Review\n\n"
-        f"{context}\n\n"
-        f"## Specialist Deliverables to Synthesize\n\n"
-        f"{compiled_outputs}\n\n"
-        f"## Required Output\n\n"
-        f"1. **Executive Summary** (3-5 paragraphs):\n"
-        f"   - Strategic situation assessment\n"
-        f"   - Key opportunities identified across specialists\n"
-        f"   - Primary recommendation with expected business impact\n\n"
-        f"2. **Quality Audit Report**:\n"
-        f"   - Citation coverage: % of claims with source URLs\n"
-        f"   - Data freshness: any stale data flagged\n"
-        f"   - Unsupported claims: list any claims lacking evidence\n"
-        f"   - Policy compliance: any prohibited patterns detected\n\n"
-        f"3. **Commercial Execution Roadmap**:\n"
-        f"   - Phase 1 (Days 1-14): Quick wins and immediate actions\n"
-        f"   - Phase 2 (Days 15-30): Campaign launches and content deployment\n"
-        f"   - Phase 3 (Days 31-60): Optimization, measurement, iteration\n"
-        f"   - Each phase: specific actions, owners, success metrics\n\n"
-        f"4. **Risk Register**:\n"
-        f"   - Top 3-5 risks with mitigation strategies\n"
-        f"   - Research gaps that need to be closed\n"
-        f"   - Assumptions that need validation\n\n"
-        f"**CRITICAL**: If any specialist output contains unsourced claims, "
-        f"flag them explicitly in the Quality Audit Report."
+    analysis_request = (
+        f"## Synthesis Request\n\n"
+        f"1. **Executive Summary** (3-5 paragraphs)\n"
+        f"2. **Quality Audit**: Citation coverage, data freshness, unsupported claims\n"
+        f"3. **Execution Roadmap**: Phase 1 (Days 1-14), Phase 2 (15-30), Phase 3 (31-60)\n"
+        f"4. **Risk Register**: Top 3-5 risks with mitigations\n"
+        f"5. **Research Gaps**: What needs deeper investigation via ego-browser\n"
     )
 
-    content = _call_llm(system_prompt, user_prompt)
+    llm_result = _call_llm(
+        system_prompt=system_prompt,
+        user_prompt=f"{context}\n\n{compiled}\n\n{analysis_request}",
+    )
+
+    if llm_result:
+        content = llm_result
+        data_source = "free_apis_plus_llm"
+    else:
+        # Build synthesis brief for the Antigravity agent
+        content = (
+            f"# {company_name} — Executive GTM Synthesis\n\n"
+            f"**Generated**: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}\n"
+            f"**Total Evidence Items**: {total_evidence}\n"
+            f"**Mode**: Free Research (no paid APIs)\n\n"
+            f"---\n\n"
+            f"## Specialist Deliverables\n\n"
+            f"{compiled}\n\n"
+            f"---\n\n"
+            f"## 🔍 Synthesis Instructions for Antigravity Agent\n\n"
+            f"Review the specialist outputs above and use your built-in tools "
+            f"(`search_web`, `read_url_content`) to:\n\n"
+            f"{analysis_request}\n\n"
+            f"Flag any claims that lack [Source: URL] citations.\n"
+        )
+        data_source = "free_apis_plus_agent_brief"
 
     output: SubAgentOutput = {
         "task_id": f"task_{company_name.lower().replace(' ', '_')}_analyst_4",
         "specialist": "analyst",
-        "title": f"{company_name} Executive GTM Synthesis & Quality Review",
+        "title": f"{company_name} Executive GTM Synthesis",
         "content": content,
         "metadata": {
             "status": "SUCCESS",
             "generated_at": datetime.now(timezone.utc).isoformat(),
+            "total_evidence_items": total_evidence,
             "quality_audit_included": True,
-            "data_source": "llm_generated" if _get_llm_client() else "prompt_package",
+            "data_source": data_source,
         },
     }
 
     agent_outputs.append(output)
-    logs.append(f"[Analyst Reviewer Node] Completed synthesis ({len(content)} chars)")
+    logs.append(f"[Analyst Reviewer] Complete ({len(content)} chars, {data_source})")
 
-    return {
-        "agent_outputs": agent_outputs,
-        "logs": logs,
-    }
+    return {"agent_outputs": agent_outputs, "logs": logs}
